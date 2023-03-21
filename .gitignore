@@ -1,1 +1,4 @@
-Notes-HighPerformanceLinuxServerProgramming/
+/Notes-HighPerformanceLinuxServerProgramming/
+/chapter5/
+!/chapter5/*.cpp
+!/chapter5/*.md
