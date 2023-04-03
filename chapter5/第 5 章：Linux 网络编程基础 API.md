@@ -10,7 +10,7 @@
 
 
 
-##　5.1.1 主机字节序和网络字节序
+## 5.1.1 主机字节序和网络字节序
 
 <font color=blue>现代 CPU 的 ACC（累加器）一次都能装载至少 4 字节，字节序分为大端字节序（big endian）和小端字节序（little endian）。</font>
 
@@ -35,6 +35,33 @@ unsigned short int ntohs(unsigned short int netshort);
 
 
 ## 5.1.2 通用 socket 地址
+
+```c++
+#include <bits/socket.h>
+/*
+socket 网络编程接口中表示 socket 地址的是结构体 sockaddr：
+	sa_family 成员是地址族类型（sa_family_t）的变量，地址族类型（sa_family）通常与协议族类型（protocol family，也称为 domain）对应。对应关系可参考表 5-1。
+	sa_data 成员用于存放 socket 地址值。但是不同协议族的地址值具有不同的含义和长度，可参考表 5-2。
+*/
+struct sockaddr
+{
+    sa_family_t sa_family;
+    char sa_data[14];
+};
+
+/*
+用来解决结构 sockaddr 中成员 sa_data 无法容纳多数协议族的地址值，而使用下面这个新的通用的 socket 地址结构体。
+这个结构体不仅提供了足够大的空间用来存放地址值，而且是内存对齐的（这是由于 __ss_align 成员的作用）。
+*/
+struct sockaddr_storage
+{
+	sa_family_t sa_family;
+    unsigned long int __ss_align;
+    char __ss_padding[128-sizeof(__ss_align)];
+};
+```
+
+![image-20230403230454088](Image/协议族和地址族的关系以及协议族及其地址值.png)
 
 
 
