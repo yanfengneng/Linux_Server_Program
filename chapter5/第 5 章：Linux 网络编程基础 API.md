@@ -2,11 +2,11 @@
 
 **Linux API 分为三种：**
 
-1）**socket 地址 API：**由一个 IP 地址和端口对（**ip，port**），唯一地表示使用 TCP 通信的一端。也被称为 socket 地址。
+1）**socket 地址 API**：由一个 IP 地址和端口对（**ip，port**），唯一地表示使用 TCP 通信的一端。也被称为 socket 地址。
 
-2）**socket 基础 API：**socket 的主要 API 都定义在 **sys/socket.h** 文件中，包括创建 socket、命名 socket、监听 socket、接受连接、发起连接、读写数据、获取地址信息、检测带外标记，以及读取和设置 socket 选项。
+2）**socket 基础 API**：socket 的主要 API 都定义在 **sys/socket.h** 文件中，包括创建 socket、命名 socket、监听 socket、接受连接、发起连接、读写数据、获取地址信息、检测带外标记，以及读取和设置 socket 选项。
 
-3）**网络信息 API：**用来实现主机名和 IP 地址之间的转换，以及服务名称和端口号之间的转换。这些 API 被定义在 **netdb.h** 文件中。
+3）**网络信息 API**：用来实现主机名和 IP 地址之间的转换，以及服务名称和端口号之间的转换。这些 API 被定义在 **netdb.h** 文件中。
 
 
 
@@ -65,18 +65,67 @@ struct sockaddr_storage
 
 
 
-## 5.1.3 IP 地址转换函数
+## 5.1.3 专用 socket 地址
+
+上一节（5.1.2）介绍了通用 socket 地址，但是这两个通用 socket 地址结构体显然很不好用，比如设置与获取端口号就需要进行繁琐的位操作。**因此 Linux 为各个协议族提供了专门的 socket 地址结构体。**
+
+<font color=alice>注：虽然 Linux 为各个协议族提供了专门的 socket 地址结构体，但是所有的专用 socket 地址（包括上一小节中的 sockaddr_storage 结构体）类型的变量，在实际使用过程中都需要强制类型转换为通用 socket 地址类型 sockaddr 的，因为所有 socket 编程接口使用的地址参数类型都是 sockaddr 的。</font>
+
+```c++
+#include <sys/un.h>
+
+/* UNIX 本地域协议族使用以下专用 socket 地址结构体 */
+struct sockaddr_un
+{
+	sa_family_t sin_family;	/* 地址族：AF_UNIX */
+    char sun_path[108];		/* 文件路径名 */
+};
+
+
+/* sockaddr_in 是专门用于 IPv4 地址的结构体*/
+struct sockaddr_in
+{
+    sa_famliy_t sin_family;		/* 地址族：AF_INET */
+    u_int16_t sin_port;			/* 端口号，要用网络字节序表示（大端方式） */
+   	struct in_addr sin_addr;	/* IPv4结构体地址 */
+};
+struct in_addr
+{
+   u_int32_t s_addr;/* IPv4 地址，要用网络字节序（大端方式）表示 */ 
+};
+
+
+/* sockaddr_in6 是专门用于 IPv6 地址的结构体 */
+struct sockaddr_in6
+{
+	sa_famliy_t sin6_family;	/* 地址族：AF_INET 6 */
+    u_int16_t sin6_port;		/* 端口号，要用网络字节序表示（大端方式） */
+    u_int32_t sin6_flowinfo;	/* 流消息，应设置为 0 */
+    struct in6_addr sin6_addr;	/* IPv6结构体地址 */
+    u_int32_t sin6_scope_id;	/* scope ID，尚处于实验阶段 */
+};
+struct in6_addr
+{
+    unsigned char sa_addr[16];/* IPv6 地址，要用网络字节序（大端方式）来表示 */
+};
+```
+
+
+
+## 5.1.4 IP 地址转换函数
+
+**记录日志时，需要把整数表示的 IP 地址转换为可读的字符串，以下三个函数可用于将点分十进制字符串表示的 IPv4 地址和用网络字节序（大端方式）整数表示的 IPv4 地址之间进行相互转换。**
 
 ```C++
 #include <arpa/inet.h>
 
-/*将点分十进制字符串表示的 IPv4 地址转换为用网络*/
+/* 将点分十进制字符串表示的 IPv4 地址转换为用网络字节序整数（大端方式）表示的 IPv4 地址，失败则返回 INADDR_NONE。 */
 int_addr_t inet_addr(const char* strptr);
 
-/**/
+/* 也是将点分十进制字符串表示的 IPv4 地址转换为用网络字节序整数（大端方式）表示的 IPv4 地址，但是是将转换结果存储在参数 inp 指向的地址结构体中。 */
 int inet_aton(const char* cp, struct in_addr* inp);
 
-/**/
+/* 将网络字节序（大端方式）整数表示的IPv4地址转换为用点分十进制字符串表示的IPv4地址。由于该函数内部用一个静态变量来存储转换结果，函数的返回值指向该静态内存，因此 inet_ntoa 是不可重入。 */
 char* inet_ntoa(struct in_addr in);
 ```
 
@@ -134,9 +183,9 @@ int listen(int sockfd, int backlog);
 
 # 5.5 接受连接
 
-**监听 socket：**是指执行过 listen 调用并处于 LISTEN 状态的 socket。
+**监听 socket**：是指执行过 listen 调用并处于 LISTEN 状态的 socket。
 
-**连接 socket：**是指所有处于 ESTABLISHED 状态的 socket。
+**连接 socket**：是指所有处于 ESTABLISHED 状态的 socket。
 
 ```c++
 /*
@@ -144,6 +193,46 @@ int listen(int sockfd, int backlog);
 	addr 参数用来获取被接受连接的远端 socket 地址，该 socket 地址的长度由 addrlen 参数指出。
 	accept 成功时返回一个新的连接 socket，该 socket 唯一地标识了被接受的这个连接，服务器可通过该 socket 来与被接受连接的客户端进行通信。accept 失败时返回 -1 并设置 errno。
 */
+#include <sys/types.h>
+#include <sys/socket.h>
 int accept(int sockfd, struct sockaddr* addr, socklen_t *addrlen);
 ```
+
+
+
+# 5.6 发起连接
+
+**服务器可以通过 listen 调用来被动接受连接，那么客户端可以通过 connect 来主动与服务器建立连接。**
+
+```c++
+#include <sys/types.h>
+#include <sys/socket.h>
+/*
+	sockfd 参数是由 socket 系统调用返回的一个 socket。serv_addr 参数是服务器监听的 socket 地址。addrlen 参数则是指定服务器监听的地址的长度。
+	connect 成功是返回 0，并且一旦连接成功，sockfd 就唯一地标识了这个连接，客户端就可以通过读写 sockfd 来与服务器进行通信了。
+	connect 失败则返回 -1 并设置 errno。其中常见的两种 errno 是 ECONNREFUSED（表示目标端口不存在，连接被拒绝）和 ETIMEDOUT（连接超时）。
+*/
+int connect(int sockfd, const struct sockaddr* serv_addr, socklen_t addrlen);
+```
+
+
+
+# 5.7 关闭连接
+
+```c++
+#include <unistd.h>
+int close(int fd);
+```
+
+
+
+# 5.8 数据读写
+
+
+
+# 5.9 带外标记
+
+
+
+# 5.10 地址信息函数
 
