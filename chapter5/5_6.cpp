@@ -27,8 +27,7 @@ int main(int argc,char* argv[])
 
     int sockfd=socket(PF_INET,SOCK_STREAM,0);
     assert(sockfd>=0);
-    if(connect(sockfd,(struct sockaddr*)&server_address,sizeof(server_address))<0);
-    {
+    if(connect(sockfd,(struct sockaddr*)&server_address,sizeof(server_address))<0){
         printf("connection failed\n");
     }
     else
