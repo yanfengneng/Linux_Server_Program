@@ -221,12 +221,39 @@ int connect(int sockfd, const struct sockaddr* serv_addr, socklen_t addrlen);
 
 ```c++
 #include <unistd.h>
+/*
+	关闭一个连接实际上就是关闭该连接对应的 socket。
+	fd 参数表示是带关闭的 socket，close 系统调用并非总是立即关闭一个连接，而是将 fd 的引用计数减 1（类比操作系统中文件的硬链接中的引用计数）。
+	在多进程程序中，一次 fork 系统调用默认将父进程中打开的 socket 的引用计数加 1，因此只有在父进程和子进程中都对该 socket 执行 close 调用才能将连接关闭。
+*/
 int close(int fd);
 ```
 
 
 
+```c++
+#include <sys/socket.h>
+/*
+使用 shutdown 能将 socket 连接立即终止，相对于 close 来说 shutdown 是专门为网络编程设计的。
+参数 sockfd 是带关闭的 socket，参数 howto决定了 shutdown 的行为，可选择下表中的某个值。
+*/
+int shutdown(int sockfd, int howto);
+```
+
+![image-20230404142223598](Image/howto参数的可选值.png)
+
+
+
 # 5.8 数据读写
+
+## 5.8.1 TCP 数据读写
+
+```c++
+#include <sys/types.h>
+#include <sys/socket.h>
+ssize_t recv(int sockfd, void *buf, size_t len, int flags);
+ssize_t send(int sockfd, const void *buf, size_t len, int flags);
+```
 
 
 
