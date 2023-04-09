@@ -265,7 +265,7 @@ ssize_t recv(int sockfd, void *buf, size_t len, int flags);
 ssize_t send(int sockfd, const void *buf, size_t len, int flags);
 ```
 
-![image-20230409214652009](Image/flags 参数的可选值.png)
+![image-20230409214652009](https://github.com/yanfengneng/Linux_Server_Program/blob/master/chapter5/Image/flags%20%E5%8F%82%E6%95%B0%E7%9A%84%E5%8F%AF%E9%80%89%E5%80%BC.png)
 
 
 
