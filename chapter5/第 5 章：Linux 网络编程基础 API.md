@@ -248,12 +248,51 @@ int shutdown(int sockfd, int howto);
 
 ## 5.8.1 TCP 数据读写
 
+**flags 参数只对 send 和 recv 的当前调用生效。**
+
 ```c++
 #include <sys/types.h>
 #include <sys/socket.h>
+/* 
+	recv 读取 sockfd 上的数据，buf 指定读缓冲区的位置，len 指定读缓冲区的大小，flag 参数通常设置为 0，具体参数函数见下表 5-4。
+	recv 函数成功时返回实际读取到的数据长度，它可能小于 len，因此有时候需要多次调用 recv 才能读取到完整的数据。recv 返回 0 时，表示通信对方以及关闭连接了。recv 出错时返回 -1 并设置 errno。
+*/
 ssize_t recv(int sockfd, void *buf, size_t len, int flags);
+
+/*
+	send 往 sockfd 上写入数据，buf 和 len 参数分别指定了写缓冲区的位置和大小。send 成功时返回实际写入数据的数据长度，失败则返回 -1 并设置 errno。
+*/
 ssize_t send(int sockfd, const void *buf, size_t len, int flags);
 ```
+
+![image-20230409214652009](Image/flags 参数的可选值.png)
+
+
+
+## 5.8.2 UDP 数据读写
+
+下面这两个用于 UDP 读写的系统调用也可以用于**用于面向连接的 socket 数据的读写。由于在面向连接中我们已经知道双方的 socket 地址，因此只用将后面两个参数设置为 NULL 就可用面向连接了。**
+
+```c++
+#include <sys/types.h>
+#include <sys/socket.h>
+/*
+由于 UDP 通信没有连接的概念，因此每次在读取数据的时候都需要获取发送端的 socket 地址，即参数 src_addr 所值的内容和 addrlen 参数指定该地址的长度。
+recvfrom 读取 sockfd 上的数据，buf 和 len 参数分别指定读缓冲区的位置和大小。
+*/
+ssize_t recvfrom(int sockfd, void* buf, size_t len, int flags, struct sockaddr* src_addr, socklen_t* addrlen);
+
+/*
+sendto 往 sockfd 上写入数据，buf 和 len 参数分别指定写缓冲区的位置和大小。dest_addr 参数指定接手端的 socket 地址，addrlen 参数则指定该地址的长度。
+*/
+ssize_t sendto(int sockfd, const void* buf, size_t len, int flags, const struct sockaddr* dest_addr, socklen_t* addrlen);
+```
+
+
+
+## 5.8.3 通用数据读写函数
+
+
 
 
 
