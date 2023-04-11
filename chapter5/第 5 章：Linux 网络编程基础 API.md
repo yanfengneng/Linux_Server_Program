@@ -292,13 +292,71 @@ ssize_t sendto(int sockfd, const void* buf, size_t len, int flags, const struct 
 
 ## 5.8.3 通用数据读写函数
 
+```c++
+#include <sys/socket.h>
+/* sockfd 参数用来指定被操作的目标 socket，msg 参数是 msghdr 结构体类型的指针，flags 参数与表 5-4 中的一致。 */
+ssize_t recvmsg(int sockfd, struct msghdr* msg, int flags);
+ssize_t sendmsg(int sockfd, struct msghdr* msg, int flags);
 
+struct msghdr
+{
+    /* socket 地址：用来指定通信对方的 socket 地址，对于面向连接的 TCP 协议，该成员没有意义，必须被设置为 NULL。 */
+    void* msg_name;
+    /* 指定 msg_name 所值 socket 地址的长度 */
+    socklen_t msg_namelen;
+    /* 该结构体定义见下面 */
+    struct ioves* msg_iov;
+    /* 说明分散内存块的数量 */
+    int msg_iovlen;
+    /* 用于辅组数据的传送，指定辅组数据的起始位置 */
+    void* msg_control;
+    /* 也是用于辅组数据的传送，用来说明辅组数组的大小 */
+    socklen_t msg_controllen;
+    /* 复制上面函数中的 flags 参数，并在调用过程中进行更新 */
+    int msg_flags;
+};
+
+/* 
+	iovec 结构体封装了一块内存的起始位置和长度，通过上面 msghdr 结构体中的变量 msg_iovlen 来指定这样的内存块有多少个。
+	对于 recvmsg 而言，数据将被读取并存储在 msg_iovlen 个分散的内存块中，这些内存块的位置和长度由 msg_ivo 指向的结构体决定，这也被称为集中读。
+	对于 sendmsg 而言，msg_iovlen 个分散的内存块中的数据将被一起发送，这也被称为集中写。
+*/
+struct iovec
+{
+	void *iov_base; /* 内存的起始地址 */
+    size_t iov_len;	/* 这块内存的长度 */
+};
+```
 
 
 
 # 5.9 带外标记
 
+![image-20230411110918402](Image/带外标记.png)
+
 
 
 # 5.10 地址信息函数
+
+```c++
+#include <sys/socket.h>
+/* 用来获得 sockfd 对应的本端 socket 地址，并将其存储在 address 参数指定的内存中，该 socket 地址的长度则存储在 address_len 参数指向的变量中。
+注意当实际的 socket 地址的长度 address 所指内存区的大小时，则该 socket 地址将会被截断。函数成功返回 0，失败返回 -1 并设置 errno。
+*/
+int getsockname(int sockdf, struck sockaddr* addresss, socklen_t* address_len);
+/* 用来获得 sockfd 对应的远端 socket 地址，其参数及返回值的含义与 getsocketname 的参数及返回值相同。 */
+int getpeername(int sockfd, struct sockaddr* address, socklen_t* address_len);
+```
+
+
+
+# 5.11 socket 选项
+
+```c++
+#include <sys/socket.h>
+int getsockopt(int sockfd, int level, int option_name, void* option_value, socklen_t* restrick option_len);
+int setsockopt(int sockfd, int level, int option_name, const void* option_value, socklen_t option_len);
+```
+
+![image-20230411122700426](Image/socket 选项.png)
 
