@@ -43,6 +43,7 @@ int main(int argc,char * argv[])
     else
     {
         close( STDOUT_FILENO );
+        /* 创建和 connfd 指向相同文件、管道或者网络连接的新文件描述符 */
         dup( connfd );
         printf( "abcd\n" );
         close( connfd );
