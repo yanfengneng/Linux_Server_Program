@@ -42,9 +42,11 @@ int main(int argc,char * argv[])
     }
     else
     {
+        /* 首先关闭文件描述符 STDOUT_FILENO（其值是1） */
         close( STDOUT_FILENO );
-        /* 创建和 connfd 指向相同文件、管道或者网络连接的新文件描述符 */
+        /* 然后复制 socket 文件描述符 connfd。由于 dup 总是返回系统中最小的可用文件描述符，所以它的返回值实际上是 1，即使之前关闭的标准输出文件描述符的值。 */
         dup( connfd );
+        /* 这样一来服务器输出到标准输出的内容就会直接被发送到与客户连接对应的 socket 上，因此 printf 调用的输出将被客户端获得。 */
         printf( "abcd\n" );
         close( connfd );
     }
