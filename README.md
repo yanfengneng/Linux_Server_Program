@@ -7,3 +7,5 @@ Linux 高性能服务器学习笔记，记录如下（持续更新中）：
 [第 5 章：Linux 网络编程基础 API](chapter5/%E7%AC%AC%205%20%E7%AB%A0%EF%BC%9ALinux%20%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B%E5%9F%BA%E7%A1%80%20API.md)
 
 [第 6 章：高级 IO 函数](chapter6/%E7%AC%AC%206%20%E7%AB%A0%EF%BC%9A%E9%AB%98%E7%BA%A7%20IO%20%E5%87%BD%E6%95%B0.md)
+
+[第 7 章：Linux 服务器程序规范](chapter7/%E7%AC%AC%207%20%E7%AB%A0%EF%BC%9ALinux%20%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%A8%8B%E5%BA%8F%E8%A7%84%E8%8C%83.md)
