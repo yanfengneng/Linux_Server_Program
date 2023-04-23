@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 
+// 服务端程序
 int main( int argc, char* argv[] )
 {
 	if( argc <= 2 )
@@ -50,8 +51,8 @@ int main( int argc, char* argv[] )
 	printf( "connected with ip: %s and port: %d\n", inet_ntop( AF_INET, &client_address.sin_addr, remote_addr, INET_ADDRSTRLEN ), ntohs( client_address.sin_port ) );
 
 	char buf[1024];
-    fd_set read_fds;
-    fd_set exception_fds;
+    fd_set read_fds;		// 可读文件描述符集合
+    fd_set exception_fds;	// 异常文件描述符集合
 
     FD_ZERO( &read_fds );
     FD_ZERO( &exception_fds );
@@ -75,7 +76,7 @@ int main( int argc, char* argv[] )
         /* 对于可读事件，采用普通的 recv 函数来读取数据 */
         if ( FD_ISSET( connfd, &read_fds ) )
 		{
-        		ret = recv( connfd, buf, sizeof( buf )-1, 0 );
+        	ret = recv( connfd, buf, sizeof( buf )-1, 0 );
 			if( ret <= 0 )
 			{
 				break;
@@ -86,11 +87,11 @@ int main( int argc, char* argv[] )
 		else if( FD_ISSET( connfd, &exception_fds ) )
         {
             ret = recv( connfd, buf, sizeof( buf )-1, MSG_OOB );
-        if( ret <= 0 )
-        {
-            break;
-        }
-        printf( "get %d bytes of oob data: %s\n", ret, buf );
+			if( ret <= 0 )
+			{
+				break;
+			}
+			printf( "get %d bytes of oob data: %s\n", ret, buf );
         }
 
 	}
