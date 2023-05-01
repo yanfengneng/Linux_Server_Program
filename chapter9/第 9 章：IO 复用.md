@@ -70,7 +70,7 @@ struct pollfd
 };
 ```
 
-poll 支持的事件类型如下：
+**poll 支持的事件类型如下：**
 
 ![image-20230423154050501](Image/poll事件类型1.png)
 
@@ -82,11 +82,40 @@ poll 支持的事件类型如下：
 
 ## 9.3.1 内核时间表
 
+epoll 是 Linux 特有的 IO 复用函数。
+
+* 1）epoll 是使用一组函数来完成任务，而不是使用单个函数。
+* 2）epoll 把用户关心的文件描述符上的事件放在内核里面的一个事件表中，不需要像 select 和 poll 那样每次调用都要重复传入文件描述符集或者事件集。**但是 epoll 需要使用一个额外的文件描述符，来唯一标识内核中的这个事件表。**这个文件描述符由 epoll_create 来创建。
+
 ```c++
 #include <sys/epoll.h>
+/* 参数 size 现在并不起作用，只是给内核一个提示，告诉这个事件表需要多大。
+该函数返回的文件描述符将作用其他 epoll 系统调用的第一个参数，以指定要访问的内核事件表。 */
 int epoll_create(int size);
+
+/* epoll_ctl 是用来操作 epoll 的内核事件表的：fd 参数用来表示要操作的文件描述符，op 参数则用来指定操作类型，event 参数用来指定事件。 */
 int epoll_ctl(int epfd,int op,int fd, struct epoll_event* event);
+
+/* events 成员描述事件类型 */
+/* 表示 epoll 事件类型的宏是在 poll 对应的宏前加上"E"，比如 epoll 的数据可读事件是 EPOLLIN，但是 epoll 有两个额外的事件类型--EPOLLET 和 EPOLLONESHOT。 */
+struct epoll_event
+{
+	__uint32_t events;	// epoll 事件
+    epoll_data_t data;	// 数据
+};
+
+typedef union epoll_data
+{
+    void* ptr;
+    int fd;
+    uint32_t u32;
+    uint64_t u64;
+}epoll_data_t;
 ```
+
+op 参数的操作类型有如下 3 种：
+
+![image-20230423200854105](Image/操作类型参数.png)
 
 
 
@@ -94,6 +123,8 @@ int epoll_ctl(int epfd,int op,int fd, struct epoll_event* event);
 
 ```c++
 #include <sys/epoll.h>
+/* 函数功能：表示在一段超时时间内，等待一组文件描述符上的事件。
+参数意义：timeout 参数指定 poll 的超时，单位是毫秒。maxevents 参数指定最多监听多少个事件，它必须大于 0。epoll_wait 如果检查到事件，就将所有就绪事件从内核事件表中，也就是 epfd 参数指定的内核事件表复制到它的第二个参数 events 指向的数组中。 */
 int epoll_wait(int epfd,struct epoll_event* events, int maxevents, int timeout);
 ```
 
@@ -101,15 +132,24 @@ int epoll_wait(int epfd,struct epoll_event* events, int maxevents, int timeout);
 
 ## 9.3.3 LT 和 ET 模式
 
+epoll 对文件描述符的操作有两种模式：LT（Level Trigger，电平触发） 和 ET（Edge Trigger，边沿触发） 模式。
 
+* 1）**LT 模式**是默认的工作方式，这种模式下 epoll 相当于是一个效率较高的 poll。当往 epoll 内核事件表中注册一个文件描述符上的 **EPOLLET** 事件时，epoll 将以 ET 模式来操作该文件描述符。**ET 模式是 epoll 的高效工作模式。**
+* 2）**LT 模式**是指当 epoll_wait 检查到其上有事件发生，并将此事件通知给应用程序后，**应用程序可以不立即处理该事件**。这样当应用程序下一次调用 epoll_wait 时，epoll_wait 还是会再次向应用程序告知此事件，**直到该事件被处理。**
+* 3）**ET 模式**是指当 epoll_wait 检测到其上有事件发生并将此事件通知应用程序后，**应用程序必须立即处理该事件**。因此，ET 模式很大程度上降低了同一个 epoll 事件被重复触发的次数，因此效率要比 LT 模式高。
 
 ## 9.3.4 EPOLLONESHOT 事件
 
+**使用 epoll 的 EPOLLONESHOT 事件来让 socket 连接在任一时刻都只被一个线程处理。**
 
+<font color=blue>对于注册了 EPOLLONESHOT 事件的文件描述符，OS 最多触发其上注册的一个可读、可写或者异常事件，且触发一次，除非使用 epoll_ctl 函数重置该文件描述符上注册的 EPOLLONESHOT 事件。</font>
 
 
 
 # 9.4 三组 IO 复用函数的比较
 
-![image-20230421164352421](Image/select、poll和epoll的区别.png)
+<font color=alice>select、poll 和 epoll 这三组 IO 复用系统调用都能同时监听多个文件描述符，它们将等待由 timeout 参数指定的超时时间，直到一个或者多个文件描述符上有事件发生时返回，返回值是就绪的文件描述符的数量。返回 0 表示没有事件发生。</font>
 
+**三者的区别如下：**
+
+![image-20230501214733352](Image/select、poll和epoll的区别.png)
