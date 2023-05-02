@@ -49,7 +49,7 @@ int main( int argc, char* argv[] )
     /* 声明客户端的结构体 */
     struct sockaddr_in client;
     socklen_t client_addrlength = sizeof( client );
-    /*  从监听队列中接受一个连接，然后客户端来获取被接受连接的远程 socket 地址
+    /*  从监听队列中接受一个连接，然后服务器来获取被接受连接的远程 socket 地址
         监听成功的话，accept返回一个 socket，可以使用该 socket 进行通信。 */
     int connfd = accept( sock, ( struct sockaddr* )&client, &client_addrlength );
     /* 监听失败 */
