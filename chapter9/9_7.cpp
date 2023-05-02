@@ -27,14 +27,20 @@ struct client_data
     char buf[ BUFFER_SIZE ];
 };
 
+/* 将文件描述符设置成非阻塞的 */
 int setnonblocking( int fd )
 {
+    // 6.8 fcntl 函数
+    /* 获取 fd 的状态标志，这些标志包括由 open 系统调用设置的标志和访问模式 */
     int old_option = fcntl( fd, F_GETFL );
+    // 加上无锁标志
     int new_option = old_option | O_NONBLOCK;
+    // 给 fd 设置新标志
     fcntl( fd, F_SETFL, new_option );
     return old_option;
 }
 
+// 服务器
 int main( int argc, char* argv[] )
 {
     if( argc <= 2 )
@@ -46,18 +52,22 @@ int main( int argc, char* argv[] )
     int port = atoi( argv[2] );
 
     int ret = 0;
+    // 服务器本地 socket 地址的初始化
     struct sockaddr_in address;
     bzero( &address, sizeof( address ) );
     address.sin_family = AF_INET;
     inet_pton( AF_INET, ip, &address.sin_addr );
     address.sin_port = htons( port );
 
+    // 创建 socket
     int listenfd = socket( PF_INET, SOCK_STREAM, 0 );
     assert( listenfd >= 0 );
 
+    // 将本地文件描述符与本地服务器 socket 地址进行绑定
     ret = bind( listenfd, ( struct sockaddr* )&address, sizeof( address ) );
     assert( ret != -1 );
 
+    // 开始监听 listenfd 绑定的 socket 地址，最多连接 5 个客户端
     ret = listen( listenfd, 5 );
     assert( ret != -1 );
 
@@ -67,30 +77,38 @@ int main( int argc, char* argv[] )
     // 尽管分配了足够多的 client_data 对象，但是为了提高 poll 的性能，依然有必要限制用户的数量
     pollfd fds[USER_LIMIT+1];
     int user_counter = 0;
+    // 初始化 epoll 结构体
     for( int i = 1; i <= USER_LIMIT; ++i )
     {
         fds[i].fd = -1;
         fds[i].events = 0;
     }
+    // fds[0] 初始化为本地的文件描述符 listenfd，使用 listenfd 来与客户端进行交互
     fds[0].fd = listenfd;
+    // 事件初始化为可读和错误
     fds[0].events = POLLIN | POLLERR;
+    // 实际发生的事件为 0 个
     fds[0].revents = 0;
 
     while( 1 )
     {
+        // 开始监听事件
         ret = poll( fds, user_counter+1, -1 );
         if ( ret < 0 )
         {
             printf( "poll failure\n" );
             break;
         }
-
+        // 开始遍历用户
         for( int i = 0; i < user_counter+1; ++i )
         {
             if( ( fds[i].fd == listenfd ) && ( fds[i].revents & POLLIN ) )
             {
+                // 开始与客户端进行连接
                 struct sockaddr_in client_address;
                 socklen_t client_addrlength = sizeof( client_address );
+                /* 从监听队列中接受一个连接，然后服务器来获取被接受连接的远程 socket 地址
+                监听成功的话，accept返回一个 socket，可以使用该 socket 进行通信。*/
                 int connfd = accept( listenfd, ( struct sockaddr* )&client_address, &client_addrlength );
                 if ( connfd < 0 )
                 {
@@ -102,14 +120,18 @@ int main( int argc, char* argv[] )
                 {
                     const char* info = "too many users\n";
                     printf( "%s", info );
+                    // 给客户端发送数据，然后关闭 socket 连接（读写和发送数据都是通过文件描述符来进行的，这也就是 linux 一切皆文件的原因了。）
                     send( connfd, info, strlen( info ), 0 );
                     close( connfd );
                     continue;
                 }
                 // 对于新的连接，同时修改 fds 和 users 数组。users[connfd] 对应新连接文件描述符 connfd 的客户数据
                 user_counter++;
+                // 将获取到的客户端 socket 地址赋值给用户数组
                 users[connfd].address = client_address;
+                // 将 connfd 设置为非阻塞的
                 setnonblocking( connfd );
+                // 更新新连接的文件描述符，注册的事件，实际发生的事件
                 fds[user_counter].fd = connfd;
                 fds[user_counter].events = POLLIN | POLLRDHUP | POLLERR;
                 fds[user_counter].revents = 0;
@@ -182,6 +204,7 @@ int main( int argc, char* argv[] )
                 {
                     continue;
                 }
+                //printf("Please the server put in data:\n");
                 ret = send( connfd, users[connfd].write_buf, strlen( users[connfd].write_buf ), 0 );
                 users[connfd].write_buf = NULL;
                 // 写完数据后需要重新注册 fds[i] 上的可读事件

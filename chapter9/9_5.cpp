@@ -14,10 +14,15 @@
 
 #define BUFFER_SIZE 1023
 
+/* 将文件描述符设置成非阻塞的 */
 int setnonblocking( int fd )
 {
+    // 6.8 fcntl 函数
+    /* 获取 fd 的状态标志，这些标志包括由 open 系统调用设置的标志和访问模式 */
     int old_option = fcntl( fd, F_GETFL );
+    // 加上无锁标志
     int new_option = old_option | O_NONBLOCK;
+    // 给 fd 设置新标志
     fcntl( fd, F_SETFL, new_option );
     return old_option;
 }
@@ -33,12 +38,16 @@ int unblock_connect( const char* ip, int port, int time )
     address.sin_port = htons( port );
 
     int sockfd = socket( PF_INET, SOCK_STREAM, 0 );
+    // 将 sockfd 设置为非阻塞的
     int fdopt = setnonblocking( sockfd );
+    /* 开始监听服务器的 socket 地址。connet 成功时返回0，一旦成功建立连接，sockfd 就唯一地标识了这个连接，客户端就可以通过读写 sockfd 来与服务器进行通信了。
+    connect 失败则返回 -1 并设置 errno */
     ret = connect( sockfd, ( struct sockaddr* )&address, sizeof( address ) );
     if ( ret == 0 )
     {
         // 如果连接成功，则回复 sockfd 的属性，并立即返回之
         printf( "connect with server immediately\n" );
+        // 还原 sockfd 的事件标志
         fcntl( sockfd, F_SETFL, fdopt );
         return sockfd;
     }
@@ -49,16 +58,18 @@ int unblock_connect( const char* ip, int port, int time )
         return -1;
     }
 
-    fd_set readfds;
-    fd_set writefds;
+    fd_set readfds;     // 读事件
+    fd_set writefds;    // 写事件
     struct timeval timeout;
 
     FD_ZERO( &readfds );
+    // 给 sockfd 设置写事件
     FD_SET( sockfd, &writefds );
 
-    timeout.tv_sec = time;
-    timeout.tv_usec = 0;
+    timeout.tv_sec = time;  // 秒数
+    timeout.tv_usec = 0;    // 微秒数
 
+    // 开始监听写事件
     ret = select( sockfd + 1, NULL, &writefds, NULL, &timeout );
     if ( ret <= 0 )
     {
@@ -68,6 +79,7 @@ int unblock_connect( const char* ip, int port, int time )
         return -1;
     }
 
+    // 写事件未发生
     if ( ! FD_ISSET( sockfd, &writefds  ) )
     {
         printf( "no events on sockfd found\n" );
@@ -98,6 +110,7 @@ int unblock_connect( const char* ip, int port, int time )
     return sockfd;
 }
 
+// 客户端程序
 int main( int argc, char* argv[] )
 {
     if( argc <= 2 )
@@ -113,6 +126,7 @@ int main( int argc, char* argv[] )
     {
         return 1;
     }
+    // 关闭 sockfd 上的写操作
     shutdown( sockfd, SHUT_WR );
     sleep( 200 );
     printf( "send data out\n" );
