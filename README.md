@@ -15,3 +15,5 @@ Linux 高性能服务器学习笔记，记录如下（持续更新中）：
 [第 9 章：IO 复用](chapter9/%E7%AC%AC%209%20%E7%AB%A0%EF%BC%9AIO%20%E5%A4%8D%E7%94%A8.md)
 
 [第 10 章：信号](chapter10/%E7%AC%AC%2010%20%E7%AB%A0%EF%BC%9A%E4%BF%A1%E5%8F%B7.md)
+
+[第 11 章：定时器](chapter11/%E7%AC%AC%2011%20%E7%AB%A0%EF%BC%9A%E5%AE%9A%E6%97%B6%E5%99%A8.md)
