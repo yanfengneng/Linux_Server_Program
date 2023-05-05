@@ -36,7 +36,7 @@ int main(int argc,char* argv[])
     int sockfd=socket(PF_INET,SOCK_STREAM,0);
     /* 创建 socket 失败就发生断言 */
     assert(sockfd>=0);
-    /* 服务端开始监听 socket：指定监听服务器的 IP 地址，然后指定服务器的长度。connet失败就会返回 -1，这样程序就会推出了。 */
+    /* 客户端开始监听 socket：指定监听服务器的 IP 地址，然后指定服务器的长度。connet失败就会返回 -1，这样程序就会推出了。 */
     if(connect(sockfd,(struct sockaddr*)&server_address,sizeof(server_address))<0){
         printf("connection failed\n");
     }
