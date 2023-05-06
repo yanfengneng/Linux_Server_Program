@@ -4,35 +4,43 @@
 #include <time.h>
 
 #define BUFFER_SIZE 64
-class util_timer;
+class util_timer;   /* 前向声明 */
+
+/* 用户数据结构 */
 struct client_data
 {
-    sockaddr_in address;
-    int sockfd;
-    char buf[ BUFFER_SIZE ];
-    util_timer* timer;
+    sockaddr_in address;        // 客户端 socket 地址
+    int sockfd;                 // socket 文件描述符
+    char buf[ BUFFER_SIZE ];    // 读缓存
+    util_timer* timer;          // 定时器
 };
 
+/* 双向链表实现的定时器类 */
 class util_timer
 {
 public:
+    // 构造函数
     util_timer() : prev( NULL ), next( NULL ){}
 
 public:
-   time_t expire; 
-   void (*cb_func)( client_data* );
-   client_data* user_data;
-   util_timer* prev;
-   util_timer* next;
+   time_t expire;                       // 任务的超时时间，这里使用的是绝对时间
+   void (*cb_func)( client_data* );     // 任务回调函数
+   // 回调函数处理的客户数据，由定时器的执行者传递给回调函数
+   client_data* user_data;            
+   util_timer* prev;                    // 指向前一个定时器
+   util_timer* next;                    // 指向后一个定时器
 };
 
+/* 定时器链表：是一个升序、带有头节点、尾节点的双向链表 */ 
 class sort_timer_lst
 {
 public:
     sort_timer_lst() : head( NULL ), tail( NULL ) {}
+    // 析构函数：当链表被销毁时，删除其中所有的定时器
     ~sort_timer_lst()
     {
         util_timer* tmp = head;
+        // 从头删到尾
         while( tmp )
         {
             head = tmp->next;
@@ -40,18 +48,22 @@ public:
             tmp = head;
         }
     }
+
+    // 将目标定时器 timer 添加到链表中
     void add_timer( util_timer* timer )
     {
-        if( !timer )
-        {
+        // 定时器是空的
+        if( !timer ){
             return;
         }
-        if( !head )
-        {
+        // 链表是空的
+        if( !head ){
             head = tail = timer;
             return; 
         }
-        if( timer->expire < head->expire )
+        /* 如果目标定时器的超时时间小于当前链表中所有定时器的超时时间，则把该定时器插入链表头部，
+        作为链表新的头节点。否则就需要调用重载函数 add_time()，来把它插入到链表中合适的位置，以保证链表的升序特性。 */
+        if( timer->expire < head->expire )// 更换头节点
         {
             timer->next = head;
             head->prev = timer;
@@ -60,17 +72,22 @@ public:
         }
         add_timer( timer, head );
     }
+
+    /* 当某个定时任务发生变化时，调整对应的定时器在链表中的位置。这个函数只考虑被调整的定时器的超时时间
+    延长的情况，即该定时器需要往链表的尾部移动。 */
     void adjust_timer( util_timer* timer )
     {
-        if( !timer )
-        {
+        // 定时器为空的
+        if( !timer ){
             return;
         }
         util_timer* tmp = timer->next;
+        /* 如果被调整的目标定时器处在链表尾部，或者该定时器新的超时值仍然小于其下一个定时器的超时值，则不用调整。 */
         if( !tmp || ( timer->expire < tmp->expire ) )
         {
             return;
         }
+        /* 如果目标定时器是链表的头节点，则将该定时器从链表中取出并重新插入链表 */
         if( timer == head )
         {
             head = head->next;
@@ -78,6 +95,7 @@ public:
             timer->next = NULL;
             add_timer( timer, head );
         }
+        // 如果目标定时器不是链表的头节点，则将该定时器从链表中取出，然后插入其原来所在位置之后的部分链表中
         else
         {
             timer->prev->next = timer->next;
@@ -85,12 +103,15 @@ public:
             add_timer( timer, timer->next );
         }
     }
+
+    /* 将目标定时器 timer 从链表中删除 */
     void del_timer( util_timer* timer )
     {
-        if( !timer )
-        {
+        // 定时器为空
+        if( !timer ){
             return;
         }
+        /* 下面这个条件成立表示链表中只有一个定时器，即目标定时器 */
         if( ( timer == head ) && ( timer == tail ) )
         {
             delete timer;
@@ -98,6 +119,7 @@ public:
             tail = NULL;
             return;
         }
+        /* 如果链表中至少有两个定时器，且目标定时器是链表的头节点，则将链表的头节点重置为原头节点的下一个节点，然后删除目标定时器 */
         if( timer == head )
         {
             head = head->next;
@@ -105,6 +127,7 @@ public:
             delete timer;
             return;
         }
+        /* 如果链表中至少有两个定时器，且目标定时器是链表的尾节点，则将链表的尾节点重置为原尾节点的前一个节点，然后删除目标定时器 */
         if( timer == tail )
         {
             tail = tail->prev;
@@ -112,29 +135,37 @@ public:
             delete timer;
             return;
         }
+        /* 如果目标定时器位于链表的中间，则把它前后的定时器串联起来，然后删除目标定时器 */
         timer->prev->next = timer->next;
         timer->next->prev = timer->prev;
         delete timer;
     }
+    
+    /* SIGALRM 信号每次被触发就在其信号处理函数（如果使用统一事件源，则是主函数）中执行一次 tick 函数，以处理链表上到期的任务 */
     void tick()
     {
-        if( !head )
-        {
+        // 链表为空
+        if( !head ){
             return;
         }
         printf( "timer tick\n" );
+        // 获取系统当前的时间
         time_t cur = time( NULL );
         util_timer* tmp = head;
+        /* 从头节点开始依次处理每个定时器，直到遇到一个尚未到期的定时器，这就是定时器的核心逻辑 */
         while( tmp )
         {
-            if( cur < tmp->expire )
-            {
+            /* 因为每个定时器都使用绝对时间作为超时值，所以可以把定时器的超时值和系统当前时间进行比较以判断定时器是否到期 */
+            // 遇到还没有到期的定时器，直接退出循环不用继续处理了
+            if( cur < tmp->expire ){
                 break;
             }
+            /* 调用定时器的回调函数，以执行定时任务 */
             tmp->cb_func( tmp->user_data );
+            /* 执行完定时器中的定时任务之后，就将它从链表中删除，并重置链表头节点 */
+            // 删除当前到期的定时器，从头到尾
             head = tmp->next;
-            if( head )
-            {
+            if( head ){
                 head->prev = NULL;
             }
             delete tmp;
@@ -143,12 +174,15 @@ public:
     }
 
 private:
+    /* 私有重载函数，用来被公有的 add_timer 函数和 adjust_timer 函数调用。该函数表示将目标定时器 timer 添加到节点 lst_head 之后的部分链表中 */ 
     void add_timer( util_timer* timer, util_timer* lst_head )
     {
         util_timer* prev = lst_head;
         util_timer* tmp = prev->next;
+        /* 遍历 lst_head 节点之后的部分链表，直到找到一个超时时间大于目标定时器的超时时间的节点，并将目标定时器插入到该节点之前 */
         while( tmp )
         {
+            // 把 timer 插入到 prev 和 tmp 之间
             if( timer->expire < tmp->expire )
             {
                 prev->next = timer;
@@ -160,19 +194,20 @@ private:
             prev = tmp;
             tmp = tmp->next;
         }
-        if( !tmp )
+        /* 如果遍历完 lst_head 节点之后的部分链表，仍未找到超时时间大于目标定时器的超时时间和节点，则将目标定时器插入链表尾部，并把它设置为链表新的尾节点 */
+        if( !tmp )// tmp 为空节点
         {
             prev->next = timer;
             timer->prev = prev;
             timer->next = NULL;
-            tail = timer;
+            tail = timer;       // 更新尾节点
         }
         
     }
 
 private:
-    util_timer* head;
-    util_timer* tail;
+    util_timer* head;   // 头节点
+    util_timer* tail;   // 尾节点
 };
 
 #endif
