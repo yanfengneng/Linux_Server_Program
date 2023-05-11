@@ -65,6 +65,7 @@ int main( int argc, char* argv[] )
     }
 
     waitpid( id, NULL, 0 );
+    // 删除信号量
     semctl( sem_id, 0, IPC_RMID, sem_un );
     return 0;
 }
