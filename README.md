@@ -21,3 +21,5 @@ Linux 高性能服务器学习笔记，记录如下（持续更新中）：
 [第 12 章：高性能 IO 框架库 Libevent](chapter12/%E7%AC%AC%2012%20%E7%AB%A0%EF%BC%9A%E9%AB%98%E6%80%A7%E8%83%BD%20IO%20%E6%A1%86%E6%9E%B6%E5%BA%93%20Libevent.md)
 
 [第 13 章：多进程编程](chapter13/%E7%AC%AC%2013%20%E7%AB%A0%EF%BC%9A%E5%A4%9A%E8%BF%9B%E7%A8%8B%E7%BC%96%E7%A8%8B.md)
+
+[第 14 章：多线程编程](chapter14/%E7%AC%AC%2014%20%E7%AB%A0%EF%BC%9A%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%BC%96%E7%A8%8B.md)
