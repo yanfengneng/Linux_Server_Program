@@ -11,16 +11,17 @@ static const int CONTROL_LEN = CMSG_LEN( sizeof(int) );
 /* 发送文件描述符，fd 参数是用来传递信息的 UNIX 域 socket，fd_to_send 参数是待发送的文件描述符 */
 void send_fd( int fd, int fd_to_send )
 {
+    /* 5.8.3 通用数据读写函数 */
     struct iovec iov[1];
     struct msghdr msg;
     char buf[0];
 
-    iov[0].iov_base = buf;
-    iov[0].iov_len = 1;
-    msg.msg_name    = NULL;
-    msg.msg_namelen = 0;
-    msg.msg_iov     = iov;
-    msg.msg_iovlen = 1;
+    iov[0].iov_base = buf;      // 内存的起始地址设置为buf的首地址
+    iov[0].iov_len = 1;         // 这块内存的长度为 1
+    msg.msg_name    = NULL;     // socket 地址设置为 NULL
+    msg.msg_namelen = 0;        // socket 地址的长度设置为 0
+    msg.msg_iov     = iov;      // 分散的内存块指向 iov
+    msg.msg_iovlen = 1;         // 分散的内存块数量为 1 个
 
     cmsghdr cm;
     cm.cmsg_len = CONTROL_LEN;
@@ -28,8 +29,8 @@ void send_fd( int fd, int fd_to_send )
     cm.cmsg_type = SCM_RIGHTS;
     *(int *)CMSG_DATA( &cm ) = fd_to_send;
     // 设置辅助数据
-    msg.msg_control = &cm;
-    msg.msg_controllen = CONTROL_LEN;
+    msg.msg_control = &cm;              // 指向辅助数据的起始位置
+    msg.msg_controllen = CONTROL_LEN;   // 设置辅助数据的大小
 
     // 发送文件描述符
     sendmsg( fd, &msg, 0 );
@@ -38,16 +39,17 @@ void send_fd( int fd, int fd_to_send )
 /* 接收目标文件描述符 */
 int recv_fd( int fd )
 {
+    /* 5.8.3 通用数据读写函数 */
     struct iovec iov[1];
     struct msghdr msg;
     char buf[0];
 
-    iov[0].iov_base = buf;
-    iov[0].iov_len = 1;
-    msg.msg_name    = NULL;
-    msg.msg_namelen = 0;
-    msg.msg_iov     = iov;
-    msg.msg_iovlen = 1;
+    iov[0].iov_base = buf;      // 内存的起始地址设置为buf的首地址
+    iov[0].iov_len = 1;         // 这块内存的长度为 1
+    msg.msg_name    = NULL;     // socket 地址设置为 NULL
+    msg.msg_namelen = 0;        // socket 地址的长度设置为 0
+    msg.msg_iov     = iov;      // 分散的内存块指向 iov
+    msg.msg_iovlen = 1;         // 分散的内存块数量为 1 个
 
     cmsghdr cm;
     msg.msg_control = &cm;
