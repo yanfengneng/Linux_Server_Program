@@ -23,3 +23,5 @@ Linux 高性能服务器学习笔记，记录如下（持续更新中）：
 [第 13 章：多进程编程](chapter13/%E7%AC%AC%2013%20%E7%AB%A0%EF%BC%9A%E5%A4%9A%E8%BF%9B%E7%A8%8B%E7%BC%96%E7%A8%8B.md)
 
 [第 14 章：多线程编程](chapter14/%E7%AC%AC%2014%20%E7%AB%A0%EF%BC%9A%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%BC%96%E7%A8%8B.md)
+
+[第 15 章：进程池和线程池](chapter15/%E7%AC%AC%2015%20%E7%AB%A0%EF%BC%9A%E8%BF%9B%E7%A8%8B%E6%B1%A0%E5%92%8C%E7%BA%BF%E7%A8%8B%E6%B1%A0.md)
