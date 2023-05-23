@@ -177,9 +177,11 @@ HTTP_CODE parse_content( char* buffer, int& checked_index, CHECK_STATE& checksta
         switch ( checkstate )
         {
             /* 第一个状态：分析请求行 */
+            // 当前的状态是 CHECK_STATE_REQUESTLINE，则表示 parse_line 函数解析出来的是请求行，于是主状态机调用 parse_requestline 来分析请求行
             case CHECK_STATE_REQUESTLINE:
             {
                 // 分析请求行
+                // 只有在 parse_requestline 函数在成功分析完请求行之后将其设置位 CHECK_STATE_HEADER，从而实现状态转移
                 retcode = parse_requestline( szTemp, checkstate );
                 if ( retcode == BAD_REQUEST )
                 {
@@ -188,6 +190,7 @@ HTTP_CODE parse_content( char* buffer, int& checked_index, CHECK_STATE& checksta
                 break;
             }
             /* 第二个状态：分析头部字段 */
+            // 当前的状态是 CHECK_STATE_HEADER，则表示 parse_line 函数解析出来的是头部字段，欲使主状态机调用 parse_headers 来分析头部字段
             case CHECK_STATE_HEADER:
             {
                 // 分析头部字段
