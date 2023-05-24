@@ -23,9 +23,9 @@ public:
     /* 初始化客户连接，清空读缓冲区 */
     void init(int epollfd, int sockfd, const sockaddr_in &client_addr)
     {
-        m_epollfd = epollfd;
-        m_sockfd = sockfd;
-        m_address = client_addr;
+        m_epollfd = epollfd;        // 初始化 epoll 内核事件表
+        m_sockfd = sockfd;          // 初始化文件描述符
+        m_address = client_addr;    // 初始化socket地址
         memset(m_buf, '\0', BUFFER_SIZE);
         m_read_idx = 0;
     }
@@ -38,11 +38,12 @@ public:
         while (true)
         {
             idx = m_read_idx;
+            // 读取 m_sockfd 上的数据
             ret = recv(m_sockfd, m_buf + idx, BUFFER_SIZE - 1 - idx, 0);
             /* 如果读操作发生错误，则关闭客户连接。但如果是暂时无数据可读，则退出循环 */
             if (ret < 0)
             {
-                if (errno != EAGAIN)
+                if (errno != EAGAIN)// 读操作发生错误，关闭客户连接
                 {
                     removefd(m_epollfd, m_sockfd);
                 }
@@ -72,12 +73,14 @@ public:
                     continue;
                 }
 
+                // 第idx-1个字符设置为字符串结束符
                 m_buf[idx - 1] = '\0';
 
                 char *file_name = m_buf;
                 /* 判断客户要运行的cgi程序是否存在 */
                 if (access(file_name, F_OK) == -1)
                 {
+                    // 不存在就闭关服务器
                     removefd(m_epollfd, m_sockfd);
                     break;
                 }
@@ -99,6 +102,7 @@ public:
                     /* 子进程将标准输出定制到m_sockfd, 并执行CGI程序 */
                     close(STDOUT_FILENO);
                     dup(m_sockfd);
+                    // 由子进程来执行CGI程序
                     execl(m_buf, m_buf, NULL);
                     exit(0);
                 }
@@ -129,23 +133,28 @@ int main(int argc, char *argv[])
     const char *ip = argv[1];
     int port = atoi(argv[2]);
 
+    // 创建 socket
     int listenfd = socket(PF_INET, SOCK_STREAM, 0);
     assert(listenfd >= 0);
 
     int ret = 0;
     struct sockaddr_in address;
 
+    // 初始化 socket 地址
 	memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
     inet_pton(AF_INET, ip, &address.sin_addr);
     address.sin_port = htons(port);
 
+    // 绑定 socket 地址
     ret = bind(listenfd, (struct sockaddr *)&address, sizeof(address));
     assert(ret != -1);
 
+    // 监听 socket
     ret = listen(listenfd, 5);
     assert(ret != -1);
 
+    // 初始化进程池
     processpool<cgi_conn> *pool = processpool<cgi_conn>::create(listenfd);
     if (pool)
     {
