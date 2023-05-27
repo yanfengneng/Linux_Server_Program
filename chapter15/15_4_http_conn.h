@@ -18,8 +18,9 @@
 #include <sys/mman.h>
 #include <stdarg.h>
 #include <errno.h>
-#include "locker.h"
+#include "chapter14/14_2_locker.h"
 
+/* 线程池的模板参数类，用来封装对逻辑任务的处理。 */
 class http_conn
 {
 public:
@@ -31,11 +32,11 @@ public:
     static const int WRITE_BUFFER_SIZE = 1024;
     // HTTP 请求方法，但是仅支持 GET
     enum METHOD { GET = 0, POST, HEAD, PUT, DELETE, TRACE, OPTIONS, CONNECT, PATCH };
-    // 解析客户请求时，主状态机所处的状态
+    // 解析客户请求时，主状态机所处的状态。分别表示：当前正在分析请求行、当前正在分析头部字段
     enum CHECK_STATE { CHECK_STATE_REQUESTLINE = 0, CHECK_STATE_HEADER, CHECK_STATE_CONTENT };
     // 服务器处理 HTTP 请求的可能结果
     enum HTTP_CODE { NO_REQUEST, GET_REQUEST, BAD_REQUEST, NO_RESOURCE, FORBIDDEN_REQUEST, FILE_REQUEST, INTERNAL_ERROR, CLOSED_CONNECTION };
-    // 行的读取状态
+    // 行的读取状态，分别表示：读取到一个完整的行、行出错、行数据尚且不完整 
     enum LINE_STATUS { LINE_OK = 0, LINE_BAD, LINE_OPEN };
 
 public:
@@ -95,7 +96,7 @@ private:
     char m_read_buf[ READ_BUFFER_SIZE ];
     // 标识读缓冲中已经读入的客户数据的最后一个字节的下一个位置
     int m_read_idx;
-    // 当前正在分析的字符再读缓冲区中的位置
+    // 当前正在分析的字符在读缓冲区中的位置
     int m_checked_idx;
     // 当前正在解析的行的起始位置
     int m_start_line;
