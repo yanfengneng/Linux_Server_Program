@@ -41,7 +41,7 @@ void addfd( int epollfd, int fd )
 /* 信号处理函数 */
 void sig_handler( int sig )
 {
-    /* 保留原来的 errno，在函数最后回复，以保证函数的可重入性 */
+    /* 保留原来的 errno，在函数最后恢复，以保证函数的可重入性 */
     int save_errno = errno;
     int msg = sig;
     /* 将信号值写入管道，以通知主循环 */

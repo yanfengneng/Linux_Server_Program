@@ -3,6 +3,8 @@
     "tasks": [{
             "label": "compile",// 与 launch.json 中的 label 要一样才能运行
             "command": "g++",// 要使用的编译器，c语言就是gcc，c++就是g++
+            // 多文件编译需要加上这行代码。因此统一下，不管是单文件还是多文件都加上这行代码。
+            "type": "shell",// 任务类型：shell相当于先打开shell再输入命令，所以args还会经过shell再解析一遍
             "args": [
                 "-g", //生成和调试有关的信息
                 "${file}",
