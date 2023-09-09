@@ -24,7 +24,7 @@ sudo service mysql start
 # 停止mysql服务 
 sudo service mysql stop
 # 重启mysql服务 
-sudo service msyql restart
+sudo service mysql restart
 
 
 #　开启 mysql 服务，只有开启了 mysql 服务才能运行项目
@@ -34,3 +34,5 @@ sudo service mysql start
 sudo mysql
 ```
 
+安装 mysql 开发库：
+sudo apt-get install libmysql++-dev

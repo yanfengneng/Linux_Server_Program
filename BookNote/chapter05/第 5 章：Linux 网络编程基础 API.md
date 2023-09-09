@@ -14,9 +14,9 @@
 
 <font color=blue>现代 CPU 的 ACC（累加器）一次都能装载至少 4 字节，字节序分为大端字节序（big endian）和小端字节序（little endian）。</font>
 
-**小端字节序：低位字节在前，高位字节在后。**由于现代 PC（计算机）大多采用小端字节序，因此小端字节序又被称为**主机字节序**。
+**小端字节序：低位字节在前，高位字节在后。**由于现代 PC（计算机）大多采用小端字节序，因此小端字节序又被称为**主机字节序（host）**。
 
-**大端字节序：高位字节在前，低位字节在后。**由于格式化数据在两台使用不同字节序的主机之间直接传递时，接收端必然错误地解释之。因此大端字节序也被称为**网络字节序，用来给所有接受的主机提供了一个正确解释收到的格式化数据的保证。**
+**大端字节序：高位字节在前，低位字节在后。**由于格式化数据在两台使用不同字节序的主机之间直接传递时，接收端必然错误地解释之。因此大端字节序也被称为**网络字节序（network），用来给所有接受的主机提供了一个正确解释收到的格式化数据的保证。**
 
 ```c++
 #include <netinet/in.h>
@@ -89,6 +89,7 @@ struct sockaddr_in
     u_int16_t sin_port;			/* 端口号，要用网络字节序表示（大端方式） */
    	struct in_addr sin_addr;	/* IPv4结构体地址 */
 };
+// 这个结构体就是一个32位的无符号整数，然后用这个整数来表示ipv4地址
 struct in_addr
 {
    u_int32_t s_addr;/* IPv4 地址，要用网络字节序（大端方式）表示 */ 
@@ -104,6 +105,7 @@ struct sockaddr_in6
     struct in6_addr sin6_addr;	/* IPv6结构体地址 */
     u_int32_t sin6_scope_id;	/* scope ID，尚处于实验阶段 */
 };
+// 用16字节的字符数组来表示ipv6地址，也就是用字符串来表示16字节的ipv6地址
 struct in6_addr
 {
     unsigned char sa_addr[16];/* IPv6 地址，要用网络字节序（大端方式）来表示 */
@@ -122,11 +124,17 @@ struct in6_addr
 /* 将点分十进制字符串表示的 IPv4 地址转换为用网络字节序整数（大端方式）表示的 IPv4 地址，失败则返回 INADDR_NONE。 */
 int_addr_t inet_addr(const char* strptr);
 
-/* 也是将点分十进制字符串表示的 IPv4 地址转换为用网络字节序整数（大端方式）表示的 IPv4 地址，但是是将转换结果存储在参数 inp 指向的地址结构体中。 */
+/* 也是将点分十进制字符串表示的 IPv4 地址转换为用网络字节序整数（大端方式）表示的 IPv4 地址，但是是将转换结果存储在参数 inp 指向的地址结构体中。成功时返回1，失败则返回0。 */
 int inet_aton(const char* cp, struct in_addr* inp);
 
 /* 将网络字节序（大端方式）整数表示的IPv4地址转换为用点分十进制字符串表示的IPv4地址。由于该函数内部用一个静态变量来存储转换结果，函数的返回值指向该静态内存，因此 inet_ntoa 是不可重入。 */
 char* inet_ntoa(struct in_addr in);
+
+/* 该函数将用字符串表示的 IP 地址 src 转换为网络字节序整数表示的 IP 地址（打大端存储），并将结果存储在 dst 指向的内存中。其中 af 参数用来指定地址族（AF_INET 或者 AF_INET6）。函数成功时返回1，失败则返回0，并设置 errno。 */
+int inet_pton(int af, const char* src, void* dst);
+
+/* 将网络字节序整数 src 表示的 IP 地址转换为字符串表示的 IP 地址，将结果存储在 dst 指向的内存中。函数成功时返回目标存储单元的地址，失败则返回 NULL 并设置 errno。 */
+const char* inet_ntop(int af, const void* src, char* dst, socklen_t cnt);
 ```
 
 
@@ -134,10 +142,12 @@ char* inet_ntoa(struct in_addr in);
 # 5.2 创建socket
 UNIX/Linux 的一个哲学是：一切东西皆文件。
 
+**socket 系统调用成功时，会返回一个 socket 文件描述符，失败则返回 -1 并设置 errno。**一般使用这个 socket 文件描述符来进行通信（收发信息）。
+
 ```c++
 /*
 	domain 参数告诉系统使用哪个底层协议族。对于 TCP/IP 协议族而言，该参数应设置为 PF_INET（用于 IPv4）或PF_INET6（用于 IPv6）；对于 UNIX 本地协议族而言，该参数应该设置为 PF_UNIX。
-	type 参数指定服务类型。对于 TCP/IP 协议族而言，其值取 SOCK_STREAM 并表示传输层使用 TCP 协议，取 SOCK_DGRAM 表示传输层使用 UDP 协议。
+	type 参数指定服务类型。对于 TCP/IP 协议族而言，其值取 SOCK_STREAM 并表示传输层使用 TCP 协议，取 SOCK_DGRAM 表示传输层使用 UDP 协议。这两个值也可以和 SOCK_NONBLOCK、SOCK_CLOEXEC 进行与操作，前者表示将新创建的 socket 设为非阻塞的，后者在表示在 fork 调用子进程时在子进程中关闭该 socket。
 	protocol 参数是在前两个参数构成的协议集合下，再选择一个具体的协议。一般设置为 0，表示使用默认协议。
 	socket 系统调用成功时返回一个 socket 文件描述符，失败则返回 -1 并设置 errno。
 */
@@ -151,6 +161,8 @@ int socket(int domain, int type, int protocol);
 <font color=blue>将一个 socket 与 socket 地址绑定称为给**socket命名**。</font>
 
 <font color=alice>在服务器程序中，通常需要命名 socket，因为只有命名了 socket 后客户端才知道如何连接它。客户端则通常不需要命名 socket，而是采用**匿名方式**，即使操作系统自动分配的 socket 地址。</font>
+
+**socket 地址 = ip 地址 + 端口号，如：192.168.130.55：8000。**
 
 ```c++
 /*
@@ -174,14 +186,16 @@ int bind(int sockfd, const struct sockaddr* my_addr, socklen_t addrlen);
 /*
 	sockfd 参数表示指定被监听的 socket；
 	backlog 参数提示内核监听队列的最大长度。若监听队列的长度如果超过 backlog，那么服务器将不受理新的客户连接，客户端也将收到 ECONNREFUSED 错误信息。
-	listen 成功时返回 0，失败则返回 01 并设置 errno。
+	listen 成功时返回 0，失败则返回 -1 并设置 errno。
 */
 int listen(int sockfd, int backlog);
 ```
 
-
+这里简单总结下：首先创建一个 socket，用来指定该 socket 打算指定的 IP 协议（IPv4或者IPv6）、服务类型（TCP协议或者UDP协议），然后通过 bind() 来将创建的 socket 绑定一个 socket 地址，这个 socket 地址由我们自己来指定 IP 地址和端口号以及协议类型。之后需要使用 listen() 来监听队列上的被存放等待出来的客户连接。
 
 # 5.5 接受连接
+
+**accept()** 是从 listen 监听队列中接受一个连接。
 
 **监听 socket**：是指执行过 listen 调用并处于 LISTEN 状态的 socket。
 
@@ -189,9 +203,9 @@ int listen(int sockfd, int backlog);
 
 ```c++
 /*
-	sockfd 参数是执行过 listen 系统调用的监听 socket。
+	sockfd 参数是执行过 listen 系统调用的监听 socket 文件描述符。
 	addr 参数用来获取被接受连接的远端 socket 地址，该 socket 地址的长度由 addrlen 参数指出。
-	accept 成功时返回一个新的连接 socket，该 socket 唯一地标识了被接受的这个连接，服务器可通过该 socket 来与被接受连接的客户端进行通信。accept 失败时返回 -1 并设置 errno。
+	accept 成功时返回一个新的连接 socket 文件描述符，该 socket 文件描述符用来表示远端的客户端，服务器可通过读写该 socket 文件描述符来与远端的客户端进行通信。accept 失败时返回 -1 并设置 errno。
 */
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -203,6 +217,8 @@ int accept(int sockfd, struct sockaddr* addr, socklen_t *addrlen);
 # 5.6 发起连接
 
 **服务器可以通过 listen 调用来被动接受连接，那么客户端可以通过 connect 来主动与服务器建立连接。**
+
+解释一下：connect() 需要传入服务器的 socket 地址，以及服务器 socket 地址的长度，若连接成功，则客户端传入的 sockfd 可以用来与服务端进行通信了，也就是客户端可以通过读写 sockfd 来与服务端进行交换信息了。
 
 ```c++
 #include <sys/types.h>
@@ -222,8 +238,8 @@ int connect(int sockfd, const struct sockaddr* serv_addr, socklen_t addrlen);
 ```c++
 #include <unistd.h>
 /*
-	关闭一个连接实际上就是关闭该连接对应的 socket。
-	fd 参数表示是带关闭的 socket，close 系统调用并非总是立即关闭一个连接，而是将 fd 的引用计数减 1（类比操作系统中文件的硬链接中的引用计数）。
+	关闭一个连接实际上就是关闭该连接对应的 socket 文件描述符。
+	fd 参数表示是带关闭的 socket 文件描述符，close 系统调用并非总是立即关闭一个连接，而是将 fd 的引用计数减 1（类比操作系统中文件的硬链接中的引用计数）。
 	在多进程程序中，一次 fork 系统调用默认将父进程中打开的 socket 的引用计数加 1，因此只有在父进程和子进程中都对该 socket 执行 close 调用才能将连接关闭。
 */
 int close(int fd);
@@ -235,7 +251,7 @@ int close(int fd);
 #include <sys/socket.h>
 /*
 使用 shutdown 能将 socket 连接立即终止，相对于 close 来说 shutdown 是专门为网络编程设计的。
-参数 sockfd 是带关闭的 socket，参数 howto决定了 shutdown 的行为，可选择下表中的某个值。
+参数 sockfd 是带关闭的 socket，参数 howto 决定了 shutdown 的行为，可选择下表中的某个值。
 */
 int shutdown(int sockfd, int howto);
 ```

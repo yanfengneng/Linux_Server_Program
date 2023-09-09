@@ -30,7 +30,7 @@ int main( int argc, char* argv[] )
     assert( sock >= 0 );
 
     /*  
-        命名 socket：将 address 所指的 socket 地址分配给为命名的 sock 文件描述符，使用sizeof 来指出该地址的长度
+        命名 socket：将 address 所指的 socket 地址分配给未命名的 socket 文件描述符，使用sizeof 来指出该地址的长度
         bind 成功返回 0，失败返回 -1 并设置 errno。
     */
     int ret = bind( sock, ( struct sockaddr* )&address, sizeof( address ) );
@@ -48,6 +48,7 @@ int main( int argc, char* argv[] )
     struct sockaddr_in client;
     socklen_t client_addrlength = sizeof( client );
     /*接受 socket：sock 表示之前执行过 listen 系统调用的监听 socket；然后获取客户端的 socket 地址，并指定客户端地址的长度。*/
+    // accept() 执行成功时会返回一个 socket 文件描述符，服务端通过这个 socket 文件描述符来与远端的客户端进行通信。
     int connfd = accept( sock, ( struct sockaddr* )&client, &client_addrlength );
     // 接受连接失败，打印错误
     if ( connfd < 0 )
@@ -60,6 +61,7 @@ int main( int argc, char* argv[] )
         char remote[INET_ADDRSTRLEN ];
         printf( "connected with ip: %s and port: %d\n", 
             inet_ntop( AF_INET, &client.sin_addr, remote, INET_ADDRSTRLEN ), ntohs( client.sin_port ) );
+        // 关闭客户端的 socket 文件描述符
         close( connfd );
     }
 
