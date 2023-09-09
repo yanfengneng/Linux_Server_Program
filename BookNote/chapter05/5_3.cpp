@@ -16,6 +16,7 @@ static void handle_term(int sig)
     stop = true;
 }
 
+// 服务器程序
 int main(int argc,char* argv[])
 {
     // linux 使用 signal() 来安装信号，第一个参数指定要安装的信号，第二个参数指定信号的处理函数

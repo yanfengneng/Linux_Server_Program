@@ -10,6 +10,7 @@
 
 #define BUF_SIZE 1024
 
+/* 服务端程序 */
 /* 接收带外数据 */
 int main( int argc, char* argv[] )
 {
@@ -33,12 +34,13 @@ int main( int argc, char* argv[] )
     /* 将小端方式的端口号转换为大端方式的端口号，然后赋值给本地的端口号 */
     address.sin_port = htons( port );
 
-    /* 创建 socket：使用 UNIX 本地域协议族；传输层使用 TCP 协议；最后一个参数使用默认协议 */
+    /* 创建 socket 声明：使用 UNIX 本地域协议族；传输层使用 TCP 协议；最后一个参数使用默认协议 */
     int sock = socket( PF_INET, SOCK_STREAM, 0 );
     /* 创建 socket 失败就发生断言 */
     assert( sock >= 0 );
 
     /* 命名 socket：将本地 address 所指的 socket 地址分配给未命名的 socket 文件描述符，然后指定本地 address 地址的长度 */
+    // 这里是将本地 socket 文件描述符与 socket 地址进行绑定，之后通过该 socket 文件描述符来与客户端进行通信。
     int ret = bind( sock, ( struct sockaddr* )&address, sizeof( address ) );
     assert( ret != -1 );
 

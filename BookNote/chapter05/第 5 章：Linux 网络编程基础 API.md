@@ -191,11 +191,11 @@ int bind(int sockfd, const struct sockaddr* my_addr, socklen_t addrlen);
 int listen(int sockfd, int backlog);
 ```
 
-这里简单总结下：首先创建一个 socket，用来指定该 socket 打算指定的 IP 协议（IPv4或者IPv6）、服务类型（TCP协议或者UDP协议），然后通过 bind() 来将创建的 socket 绑定一个 socket 地址，这个 socket 地址由我们自己来指定 IP 地址和端口号以及协议类型。之后需要使用 listen() 来监听队列上的被存放等待出来的客户连接。
+这里简单总结下：首先创建一个 socket，用来指定该 socket 打算指定的 IP 协议（IPv4或者IPv6）、服务类型（TCP协议或者UDP协议），然后通过 bind() 来将创建的 socket 绑定一个 socket 地址，这个 socket 地址由我们自己来指定 IP 地址和端口号以及协议类型。之后需要使用 listen() 来监听队列上的被存放等待处理的客户连接。
 
 # 5.5 接受连接
 
-**accept()** 是从 listen 监听队列中接受一个连接。
+<font color=blue>**accept()** 是从 listen 监听队列中接受一个连接。</font>`accept(int sockfd, struct sockaddr* addr, socklen_t *addrlen)` 将从 sockfd 上的监听队列中获得一个 socket 连接，表示为远端的客户端 socket 连接，然后将这个从监听队列中获得的 socket 连接的 socket 地址赋值给 addr，也就是这里使用 addr 获得远端的客户端的 socket 地址，该 socket 地址的长度可以直接由 addrlen 参数获得。**accept 成功时返回一个新的连接 socket 文件描述符，该 socket 文件描述符用来表示远端的客户端，服务器可通过读写该 socket 文件描述符来与远端的客户端进行通信。accept 失败时返回 -1 并设置 errno。**
 
 **监听 socket**：是指执行过 listen 调用并处于 LISTEN 状态的 socket。
 
@@ -204,7 +204,7 @@ int listen(int sockfd, int backlog);
 ```c++
 /*
 	sockfd 参数是执行过 listen 系统调用的监听 socket 文件描述符。
-	addr 参数用来获取被接受连接的远端 socket 地址，该 socket 地址的长度由 addrlen 参数指出。
+	addr 参数用来获取被接受连接的远端 socket 地址，该 socket 地址的长度由 addrlen 参数指出。由于 accept() 是从 listen 监听队列中接受一个连接的，然后将从监听队列中接受到的这个连接的 socket 地址赋值给 addr 参数，该 socket 地址的长度可以直接获得。
 	accept 成功时返回一个新的连接 socket 文件描述符，该 socket 文件描述符用来表示远端的客户端，服务器可通过读写该 socket 文件描述符来与远端的客户端进行通信。accept 失败时返回 -1 并设置 errno。
 */
 #include <sys/types.h>
@@ -264,13 +264,15 @@ int shutdown(int sockfd, int howto);
 
 ## 5.8.1 TCP 数据读写
 
+对文件的读写操作 write 和 read 同样也适用于 socket，但是 socket 编程接口也提供了专门用于 socket 数据读写的系统调用，用来增加对数据读写的控制。
+
 **flags 参数只对 send 和 recv 的当前调用生效。**
 
 ```c++
 #include <sys/types.h>
 #include <sys/socket.h>
 /* 
-	recv 读取 sockfd 上的数据，buf 指定读缓冲区的位置，len 指定读缓冲区的大小，flag 参数通常设置为 0，具体参数函数见下表 5-4。
+	recv 读取 sockfd 上的数据，buf 指定读缓冲区的位置，len 指定读缓冲区的大小，flags 参数通常设置为 0，具体参数函数见下表 5-4。
 	recv 函数成功时返回实际读取到的数据长度，它可能小于 len，因此有时候需要多次调用 recv 才能读取到完整的数据。recv 返回 0 时，表示通信对方以及关闭连接了。recv 出错时返回 -1 并设置 errno。
 */
 ssize_t recv(int sockfd, void *buf, size_t len, int flags);
@@ -281,7 +283,7 @@ ssize_t recv(int sockfd, void *buf, size_t len, int flags);
 ssize_t send(int sockfd, const void *buf, size_t len, int flags);
 ```
 
-![image-20230409214652009](https://github.com/yanfengneng/Linux_Server_Program/blob/master/chapter5/Image/flags%20%E5%8F%82%E6%95%B0%E7%9A%84%E5%8F%AF%E9%80%89%E5%80%BC.png)
+![1](Image/flags%20参数的可选值.png)
 
 
 

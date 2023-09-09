@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <string.h>
 
+// 服务端程序
 int main( int argc, char* argv[] )
 {
     if( argc <= 2 )
