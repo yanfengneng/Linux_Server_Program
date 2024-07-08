@@ -26,7 +26,7 @@ int main(int argc,char* argv[])
     // 将服务器 ip 地址初始化为 0
     bzero(&server_address,sizeof(server_address));
     // 服务器的地址族设置为 IPv4 地址
-    server_address.sin_family=AF_INET;
+    server_address.sin_family=AF_INET;  
 
     /* 将参数 ip 的字符串IP地址转换为用大端方式整数表示的IP地址存放在 server_address.sin_addr 指向的内存中，并使用 IPv4 的地址族 */
     inet_pton(AF_INET, ip, &server_address.sin_addr);
